@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clearwave — Studio-quality sound from any recording</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2323d3c0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 12h2.2l1.6-5.4 2.6 12L12 4l2 12 1.8-6.4 1.4 2.4H21'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="nav">
+  <a class="brand" href="/">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h2.2l1.6-5.4 2.6 12L12 4l2 12 1.8-6.4 1.4 2.4H21"/></svg>
+    <span>Clearwave</span>
+  </a>
+  <nav class="nav-links">
+    <a href="#how">How it works</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <p class="eyebrow">Free · Runs on your own server</p>
+    <h1>Make your recordings sound like<br>they were made in a studio.</h1>
+    <p class="sub">Drop in audio or video with background noise, hum, hiss, or room echo. Clearwave strips it out and hands the file straight back to you.</p>
+  </section>
+
+  <!-- Stage 1: upload -->
+  <section id="stage-upload" class="card stage">
+    <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Choose a file or drop one here">
+      <div class="drop-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>
+      </div>
+      <p class="drop-title">Drag a file here, or <span class="link">browse</span></p>
+      <p class="drop-hint">MP3 · WAV · M4A · FLAC · OGG · MP4 · MOV · MKV · WEBM — up to 500&nbsp;MB</p>
+      <input id="file-input" type="file" accept="audio/*,video/*,.mp3,.wav,.m4a,.aac,.flac,.ogg,.opus,.mp4,.mov,.mkv,.webm,.avi" hidden>
+    </div>
+
+    <div class="options">
+      <div class="opt">
+        <label for="strength">Noise reduction</label>
+        <div class="segmented" id="strength" role="radiogroup" aria-label="Noise reduction strength">
+          <button type="button" role="radio" data-value="light" aria-checked="false">Light</button>
+          <button type="button" role="radio" data-value="medium" aria-checked="true" class="on">Balanced</button>
+          <button type="button" role="radio" data-value="strong" aria-checked="false">Strong</button>
+        </div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="dereverb"><span></span>Reduce room echo</label>
+      <label class="toggle"><input type="checkbox" id="normalize" checked><span></span>Normalize loudness (−16 LUFS)</label>
+    </div>
+
+    <p id="upload-error" class="error" hidden></p>
+  </section>
+
+  <!-- Stage 2: processing -->
+  <section id="stage-progress" class="card stage" hidden>
+    <div class="proc-head">
+      <div class="spinner" aria-hidden="true"></div>
+      <div>
+        <p class="proc-name" id="proc-name">file.mp3</p>
+        <p class="proc-step" id="proc-step">Uploading…</p>
+      </div>
+      <button class="ghost" id="cancel-btn" type="button">Cancel</button>
+    </div>
+    <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
+    <p class="bar-pct" id="bar-pct">0%</p>
+  </section>
+
+  <!-- Stage 3: result -->
+  <section id="stage-result" class="card stage" hidden>
+    <div class="result-head">
+      <div>
+        <p class="result-title">Enhanced</p>
+        <p class="result-name" id="result-name"></p>
+      </div>
+      <div class="result-actions">
+        <button class="ghost" id="again-btn" type="button">New file</button>
+        <a class="primary" id="download-btn" href="#" download>Download</a>
+      </div>
+    </div>
+
+    <div class="ab">
+      <div class="ab-switch" role="radiogroup" aria-label="Compare original and enhanced">
+        <button type="button" role="radio" data-src="original" aria-checked="false">Original</button>
+        <button type="button" role="radio" data-src="enhanced" aria-checked="true" class="on">Enhanced</button>
+      </div>
+      <p class="ab-hint">Switch while it plays — the position is kept, so you hear the same moment both ways.</p>
+    </div>
+
+    <div id="player-wrap" class="player-wrap"></div>
+    <p class="meta" id="result-meta"></p>
+  </section>
+
+  <section id="how" class="info">
+    <h2>What actually happens to your file</h2>
+    <ol class="steps">
+      <li><span>1</span><div><strong>Rumble removed.</strong> A high-pass filter clears handling thumps, AC rumble, and mains hum below 80&nbsp;Hz.</div></li>
+      <li><span>2</span><div><strong>Noise profiled and subtracted.</strong> An FFT denoiser tracks the noise floor across the whole recording and subtracts it frame by frame, so fans, hiss, and street noise drop away while speech stays.</div></li>
+      <li><span>3</span><div><strong>Residue cleaned.</strong> A non-local-means pass removes the broadband grit the first stage leaves behind, without the underwater artifacts of aggressive gating.</div></li>
+      <li><span>4</span><div><strong>Voice shaped.</strong> De-essing tames harsh <em>s</em> sounds and gentle compression evens out quiet and loud passages.</div></li>
+      <li><span>5</span><div><strong>Levelled and returned.</strong> Loudness is normalized to −16&nbsp;LUFS, the podcast standard, then peak-limited. Video keeps its original picture untouched — only the audio track is replaced.</div></li>
+    </ol>
+  </section>
+
+  <section id="faq" class="info">
+    <h2>FAQ</h2>
+    <details><summary>Does my file leave my machine?</summary><p>It goes to the Clearwave server you are running and nowhere else. No third-party API is called. Both the upload and the result are deleted automatically an hour after processing, and the <em>New file</em> button deletes them immediately.</p></details>
+    <details><summary>What comes back?</summary><p>Audio uploads return a 48&nbsp;kHz 16-bit WAV, so nothing is lost to a second round of lossy compression. Video uploads return an MP4 with the original video stream copied bit-for-bit and a fresh 192&nbsp;kbps AAC audio track.</p></details>
+    <details><summary>Which setting should I use?</summary><p><strong>Balanced</strong> handles most recordings. Use <strong>Light</strong> for music or anything where the noise is mild and you care about the ambience. Use <strong>Strong</strong> for loud, constant noise — a fan, a car, a busy café — accepting that heavy reduction can thin out the voice.</p></details>
+    <details><summary>Does it work on music?</summary><p>Yes, though the chain is tuned for speech. On music, choose <strong>Light</strong> and turn off loudness normalization to leave the dynamics alone.</p></details>
+  </section>
+</main>
+
+<footer>
+  <p>Clearwave — an independent, self-hosted audio cleanup tool. Not affiliated with Adobe.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

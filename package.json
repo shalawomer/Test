@@ -1,0 +1,24 @@
+{
+  "name": "clearwave",
+  "version": "1.0.0",
+  "description": "Self-hosted audio and video noise removal — upload a recording, get a cleaned file back.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shalawomer/Test.git"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/shalawomer/Test/issues"
+  },
+  "homepage": "https://github.com/shalawomer/Test#readme",
+  "dependencies": {
+    "express": "^5.2.1",
+    "ffmpeg-static": "^5.3.0",
+    "multer": "^2.3.0"
+  },
+  "private": true
+}
