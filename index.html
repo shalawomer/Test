@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pocket Logic</title>
+  <meta name="description" content="Endless procedurally generated logic puzzles — Flow, Nonogram, Bridges and Beacons. Tiny, offline, no ads.">
+  <meta name="theme-color" content="#f4f2ee" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121419" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <button class="icon-btn" id="backBtn" type="button" aria-label="Back to all puzzles" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+    </button>
+    <h1 id="title">Pocket Logic</h1>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch theme" title="Theme">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" /></svg>
+      </button>
+      <button class="icon-btn" id="helpBtn" type="button" aria-label="How to play" title="How to play">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6" /><circle cx="12" cy="17.2" r=".6" class="dot" /></svg>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Home: choose a puzzle -->
+    <section id="home" class="screen">
+      <p class="intro">Endless logic puzzles, generated on your device from a seed. Every level is new, nothing is downloaded, and it all works offline.</p>
+      <div class="game-list" id="gameList"></div>
+      <p class="footnote">Levels are deterministic: <em>Flow 7×7 · Level 42</em> is the same puzzle for everyone.</p>
+    </section>
+
+    <!-- Play -->
+    <section id="play" class="screen" hidden>
+      <div class="play-head">
+        <div class="sizes" id="sizeTabs" role="tablist" aria-label="Board size"></div>
+        <div class="meta">
+          <span id="levelLabel">Level 1</span>
+          <span class="sep" aria-hidden="true">·</span>
+          <span id="timer" aria-label="Time">0:00</span>
+        </div>
+      </div>
+      <div class="board-wrap" id="boardWrap">
+        <div class="loading" id="loading" hidden>Generating…</div>
+      </div>
+      <div class="status" id="status" aria-live="polite"></div>
+      <div class="controls">
+        <div class="tools" id="tools" role="radiogroup" aria-label="Tool"></div>
+        <div class="actions">
+          <button type="button" class="btn" id="undoBtn" title="Undo (Ctrl+Z)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></svg><span>Undo</span>
+          </button>
+          <button type="button" class="btn" id="restartBtn" title="Clear the board">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7" /><path d="M4 4v5h5" /></svg><span>Restart</span>
+          </button>
+          <button type="button" class="btn" id="hintBtn" title="Reveal one step">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4" /><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z" /></svg><span>Hint</span>
+          </button>
+          <button type="button" class="btn" id="skipBtn" title="Skip to the next level">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5l8 7-8 7" /><path d="M18 5v14" /></svg><span>Skip</span>
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Rules -->
+  <dialog id="helpDialog" aria-labelledby="helpTitle">
+    <form method="dialog">
+      <h2 id="helpTitle">How to play</h2>
+      <div id="helpBody"></div>
+      <div class="dialog-actions"><button class="btn primary" value="close">Got it</button></div>
+    </form>
+  </dialog>
+
+  <!-- Solved -->
+  <div class="win" id="win" hidden>
+    <div class="win-card" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+      <div class="win-burst" aria-hidden="true"></div>
+      <h2 id="winTitle">Solved!</h2>
+      <p id="winText"></p>
+      <dl class="win-stats" id="winStats"></dl>
+      <div class="dialog-actions">
+        <button type="button" class="btn" id="winHome">All puzzles</button>
+        <button type="button" class="btn primary" id="winNext">Next puzzle</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/core.js"></script>
+  <script src="js/games/flow.js"></script>
+  <script src="js/games/nonogram.js"></script>
+  <script src="js/games/bridges.js"></script>
+  <script src="js/games/beacons.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

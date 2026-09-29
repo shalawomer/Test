@@ -1,0 +1,11 @@
+{
+  "name": "pocket-logic",
+  "version": "1.0.0",
+  "description": "Endless procedurally generated logic puzzles. Static, offline, no dependencies.",
+  "private": true,
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node --test"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,15 @@
+{
+  "name": "Pocket Logic",
+  "short_name": "Pocket Logic",
+  "description": "Endless procedurally generated logic puzzles: Flow, Nonogram, Bridges and Beacons.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f2ee",
+  "theme_color": "#f4f2ee",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
