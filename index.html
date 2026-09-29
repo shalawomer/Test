@@ -19,6 +19,12 @@
     </button>
     <h1 id="title">Pocket Logic</h1>
     <div class="topbar-actions">
+      <button class="icon-btn" id="statsBtn" type="button" aria-label="Your stats" title="Stats">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V5M19 20v-7" /></svg>
+      </button>
+      <button class="icon-btn" id="soundBtn" type="button" aria-label="Sound and vibration" aria-pressed="true" title="Sound">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" /><path class="wave" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" /><path class="slash" d="M16 9.5l5 5M21 9.5l-5 5" /></svg>
+      </button>
       <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch theme" title="Theme">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z" /></svg>
       </button>
@@ -32,8 +38,21 @@
     <!-- Home: choose a puzzle -->
     <section id="home" class="screen">
       <p class="intro">Endless logic puzzles, generated on your device from a seed. Every level is new, nothing is downloaded, and it all works offline.</p>
+
+      <section class="daily" aria-labelledby="dailyTitle">
+        <div class="daily-head">
+          <div>
+            <h2 id="dailyTitle">Today's puzzles</h2>
+            <p class="daily-date" id="dailyDate"></p>
+          </div>
+          <div class="streak" id="streak"></div>
+        </div>
+        <div class="daily-list" id="dailyList"></div>
+      </section>
+
+      <h2 class="section-title">All puzzles</h2>
       <div class="game-list" id="gameList"></div>
-      <p class="footnote">Levels are deterministic: <em>Flow 7×7 · Level 42</em> is the same puzzle for everyone.</p>
+      <p class="footnote">Levels are deterministic: <em>Flow 7×7 · Level 42</em> — and each day's dailies — are the same puzzles for everyone.</p>
     </section>
 
     <!-- Play -->
@@ -79,6 +98,15 @@
     </form>
   </dialog>
 
+  <!-- Stats -->
+  <dialog id="statsDialog" aria-labelledby="statsTitle">
+    <form method="dialog">
+      <h2 id="statsTitle">Your stats</h2>
+      <div id="statsBody"></div>
+      <div class="dialog-actions"><button class="btn primary" value="close">Close</button></div>
+    </form>
+  </dialog>
+
   <!-- Solved -->
   <div class="win" id="win" hidden>
     <div class="win-card" role="dialog" aria-modal="true" aria-labelledby="winTitle">
@@ -87,13 +115,15 @@
       <p id="winText"></p>
       <dl class="win-stats" id="winStats"></dl>
       <div class="dialog-actions">
-        <button type="button" class="btn" id="winHome">All puzzles</button>
+        <button type="button" class="btn" id="winShare">Share</button>
+        <button type="button" class="btn" id="winHome">Home</button>
         <button type="button" class="btn primary" id="winNext">Next puzzle</button>
       </div>
     </div>
   </div>
 
   <script src="js/core.js"></script>
+  <script src="js/fx.js"></script>
   <script src="js/games/flow.js"></script>
   <script src="js/games/nonogram.js"></script>
   <script src="js/games/bridges.js"></script>

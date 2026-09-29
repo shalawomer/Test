@@ -104,15 +104,129 @@
   function generate(rng, size) {
     const w = size.n, h = size.n;
     const [lo, hi] = size.flows;
-    let best = null;
-    for (let attempt = 0; attempt < 60; attempt++) {
+    let best = null, last = null;
+    for (let attempt = 0; attempt < 80; attempt++) {
       const segs = cutPath(rng, hamiltonianPath(rng, w, h), w, h);
       if (!segs) continue;
       mergeDown(rng, segs, w, h, rng.range(lo, hi));
-      if (segs.length >= lo && segs.length <= hi) return build(rng, w, h, segs);
-      if (segs.length <= PALETTE.length && (!best || segs.length < best.length)) best = segs;
+      if (segs.length > PALETTE.length) continue;
+      const puzzle = build(rng, w, h, segs);
+      if (countSolutions(puzzle, 2) !== 1) { last = puzzle; continue; }
+      if (segs.length >= lo && segs.length <= hi) return puzzle;
+      // fallback: the unique puzzle whose pipe count is closest to the range
+      if (!best || Math.abs(segs.length - (lo + hi) / 2) < Math.abs(best.ends.length - (lo + hi) / 2)) best = puzzle;
     }
-    return build(rng, w, h, best);
+    return best || last;
+  }
+
+  // ---------------------------------------------------------------- solver
+
+  /**
+   * Count solutions (up to `limit`) in which no pipe runs alongside itself — the standard
+   * assumption of well-made Flow puzzles. Model: each cell gets a colour; a dot has exactly one
+   * same-coloured neighbour and every other cell exactly two. Colour domains are bitmasks,
+   * narrowed by propagation, with backtracking on the most constrained cell.
+   * Pass an array as `out` to collect the solutions as pipe paths.
+   */
+  function countSolutions(puzzle, limit = 2, out = null, budget = 60000) {
+    const { w, h, ends } = puzzle, N = w * h, K = ends.length;
+    const nb = [];
+    for (let i = 0; i < N; i++) nb.push(PL.neighbors4(i, w, h));
+    const need = new Uint8Array(N).fill(2);
+    const dom0 = new Uint16Array(N).fill((1 << K) - 1);
+    ends.forEach(([a, b], k) => { dom0[a] = dom0[b] = 1 << k; need[a] = need[b] = 1; });
+    const single = (m) => m !== 0 && (m & (m - 1)) === 0;
+    let found = 0, nodes = 0;
+
+    function propagate(dom) {
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (let x = 0; x < N; x++) {
+          const m = dom[x];
+          if (!m) return false;
+          if (single(m)) {
+            let sure = 0, poss = 0;
+            for (const y of nb[x]) if (dom[y] & m) { poss++; if (dom[y] === m) sure++; }
+            if (sure > need[x] || poss < need[x]) return false;
+            if (sure === need[x] && poss > sure) {
+              // degree satisfied: no other neighbour may take this colour
+              for (const y of nb[x]) if ((dom[y] & m) && dom[y] !== m) { dom[y] &= ~m; if (!dom[y]) return false; changed = true; }
+            } else if (poss === need[x] && sure < poss) {
+              // exactly enough candidates left: they must all be this colour
+              for (const y of nb[x]) if ((dom[y] & m) && dom[y] !== m) { dom[y] = m; changed = true; }
+            }
+          } else {
+            let keep = 0;
+            for (let r = m; r; r &= r - 1) {
+              const c = r & -r;
+              let poss = 0, sure = 0;
+              for (const y of nb[x]) if (dom[y] & c) { poss++; if (dom[y] === c) sure++; }
+              if (poss >= 2 && sure <= 2) keep |= c;
+            }
+            if (keep !== m) { dom[x] = keep; if (!keep) return false; changed = true; }
+          }
+        }
+      }
+      return true;
+    }
+
+    // both dots of a colour, and every cell fixed to it, must be linked through cells allowing it
+    const seen = new Uint8Array(N);
+    function connected(dom) {
+      for (let k = 0; k < K; k++) {
+        const c = 1 << k, [a, b] = ends[k];
+        seen.fill(0);
+        const st = [a];
+        seen[a] = 1;
+        while (st.length) {
+          const x = st.pop();
+          for (const y of nb[x]) if (!seen[y] && (dom[y] & c)) { seen[y] = 1; st.push(y); }
+        }
+        if (!seen[b]) return false;
+        for (let x = 0; x < N; x++) if (dom[x] === c && !seen[x]) return false;
+      }
+      return true;
+    }
+
+    function toPaths(dom) {
+      return ends.map(([a], k) => {
+        const c = 1 << k, path = [a];
+        let prev = -1, cur = a;
+        for (;;) {
+          const next = nb[cur].find((y) => y !== prev && dom[y] === c);
+          if (next === undefined) return path;
+          path.push(next);
+          prev = cur;
+          cur = next;
+        }
+      });
+    }
+
+    function search(dom) {
+      if (found >= limit || ++nodes > budget) return;
+      if (!propagate(dom) || !connected(dom)) return;
+      let best = -1, bestCount = 99;
+      for (let x = 0; x < N && bestCount > 2; x++) {
+        if (single(dom[x])) continue;
+        let n = 0;
+        for (let r = dom[x]; r; r &= r - 1) n++;
+        if (n < bestCount) { bestCount = n; best = x; }
+      }
+      if (best < 0) {
+        found++;
+        if (out) out.push(toPaths(dom));
+        return;
+      }
+      for (let r = dom[best]; r && found < limit; r &= r - 1) {
+        const d = dom.slice();
+        d[best] = r & -r;
+        search(d);
+      }
+    }
+
+    search(dom0);
+    return nodes > budget ? Math.max(found, limit) : found; // out of budget => treat as ambiguous
   }
 
   function build(rng, w, h, segs) {
@@ -171,15 +285,15 @@
     reset() { this.paths = this.puzzle.ends.map(() => []); }
     isSolved() { return isSolved(this.puzzle, this.paths); }
 
+    progress() {
+      return this.paths.reduce((n, p, k) => n + (isComplete(this.puzzle, p, k) ? 1 : 0), 0);
+    }
+
     status() {
       const { ends, w, h } = this.puzzle;
       const filled = new Set(ends.flat());
-      let done = 0;
-      this.paths.forEach((p, k) => {
-        if (isComplete(this.puzzle, p, k)) done++;
-        for (const c of p) filled.add(c);
-      });
-      return `Flows ${done}/${ends.length} · Filled ${Math.round((100 * filled.size) / (w * h))}%`;
+      for (const p of this.paths) for (const c of p) filled.add(c);
+      return `Flows ${this.progress()}/${ends.length} · Filled ${Math.round((100 * filled.size) / (w * h))}%`;
     }
 
     layout(W, H) {
@@ -212,7 +326,7 @@
         path = this.paths[k].slice(0, this.paths[k].indexOf(cell) + 1);
       }
       this.pushHistory();
-      this.drag = { k, path, base: this.serialize(), last: cell, pt: p };
+      this.drag = { k, path, base: this.serialize(), last: cell, pt: p, linked: isComplete(this.puzzle, path, k), chimed: false };
       this.apply();
     }
 
@@ -253,6 +367,14 @@
         const cut = p.findIndex((c) => taken.has(c));
         return cut < 0 ? p.slice() : p.slice(0, cut);
       });
+      // chime the moment a pipe connects, like the real thing
+      const linked = isComplete(this.puzzle, d.path, d.k);
+      if (linked && !d.linked) {
+        this.emit('good');
+        this.flash({ pulse: d.k }, 650);
+        d.chimed = true;
+      }
+      d.linked = linked;
       this.requestDraw();
     }
 
@@ -262,7 +384,7 @@
       this.drag = null;
       this.paths = this.paths.map((p) => (p.length > 1 ? p : []));
       const changed = JSON.stringify(this.paths) !== JSON.stringify(d.base.map((p) => (p.length > 1 ? p : [])));
-      if (changed) this.commit(); else { this.dropHistory(); this.requestDraw(); }
+      if (changed) this.commit(d.chimed ? 'quiet' : undefined); else { this.dropHistory(); this.requestDraw(); }
     }
 
     hint() {
@@ -279,8 +401,8 @@
         const cut = p.findIndex((c) => taken.has(c));
         return cut < 0 ? p : cut > 1 ? p.slice(0, cut) : [];
       });
-      this.flash(k);
-      this.commit();
+      this.flash({ path: k });
+      this.commit('hint');
       return true;
     }
 
@@ -311,9 +433,10 @@
 
       // hint flash
       for (const f of this.flashes) {
+        if (f.data.path === undefined) continue;
         ctx.globalAlpha = 0.45 * this.flashAlpha(f, now);
         ctx.fillStyle = '#ffffff';
-        for (const i of this.paths[f.data] || []) ctx.fillRect((i % w) * cs, Math.floor(i / w) * cs, cs, cs);
+        for (const i of this.paths[f.data.path] || []) ctx.fillRect((i % w) * cs, Math.floor(i / w) * cs, cs, cs);
         ctx.globalAlpha = 1;
       }
 
@@ -346,6 +469,22 @@
         }
       });
 
+      // expanding rings when a pipe connects
+      for (const f of this.flashes) {
+        if (f.data.pulse === undefined) continue;
+        const k = Math.min(1, (now - f.t) / f.dur);
+        ctx.strokeStyle = PALETTE[f.data.pulse];
+        ctx.lineWidth = Math.max(2, cs * 0.08) * (1 - k);
+        ctx.globalAlpha = 1 - k;
+        for (const i of ends[f.data.pulse]) {
+          const [x, y] = center(i);
+          ctx.beginPath();
+          ctx.arc(x, y, cs * (0.36 + 0.3 * k), 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
+
       // finger halo while dragging
       const d = this.drag;
       if (d && d.pt) {
@@ -373,9 +512,10 @@
     rules: `
       <p>Drag from a dot to draw a pipe to the other dot of the same colour.</p>
       <p>Pipes can't cross or branch, and the puzzle is solved when every pair is connected <b>and every cell is filled</b>.</p>
-      <p>Drawing through another pipe cuts it. Drag back along a pipe to shorten it, or grab any point of a pipe to redraw from there.</p>`,
+      <p>Drawing through another pipe cuts it. Drag back along a pipe to shorten it, or grab any point of a pipe to redraw from there.</p>
+      <p>Each puzzle has one intended solution, checked by a solver — no pipe ever needs to double back alongside itself — but any valid solution counts.</p>`,
     generate,
     View: FlowView,
-    logic: { isSolved, hamiltonianPath, PALETTE },
+    logic: { isSolved, countSolutions, hamiltonianPath, PALETTE },
   });
 })(globalThis.PL = globalThis.PL || {});

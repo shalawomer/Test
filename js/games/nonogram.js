@@ -202,13 +202,15 @@
     }
     setTool(id) { this.tool = id === 'cross' ? CROSS : FILL; }
 
-    status() {
-      const { w, h, rows, cols } = this.puzzle;
+    progress() {
+      const { w, h } = this.puzzle;
       let done = 0;
       for (let r = 0; r < h; r++) if (this.lineDone(true, r)) done++;
       for (let c = 0; c < w; c++) if (this.lineDone(false, c)) done++;
-      return `Lines ${done}/${rows.length + cols.length}`;
+      return done;
     }
+
+    status() { return `Lines ${this.progress()}/${this.puzzle.w + this.puzzle.h}`; }
 
     lineDone(isRow, k) {
       const { w, h, rows, cols } = this.puzzle;
@@ -282,6 +284,8 @@
       this.cells.set(d.base);
       const sr = d.start.r, sc = d.start.c;
       const steps = Math.max(Math.abs(r - sr), Math.abs(c - sc));
+      d.end = { r, c };
+      d.count = steps + 1;
       for (let s = 0; s <= steps; s++) {
         const rr = sr + Math.sign(r - sr) * s, cc = sc + Math.sign(c - sc) * s;
         const i = rr * w + cc, b = d.base[i];
@@ -332,7 +336,7 @@
       this.pushHistory();
       this.cells[i] = value;
       this.flash(i);
-      this.commit();
+      this.commit('hint');
       return true;
     }
 
@@ -427,6 +431,20 @@
           const y = oy - cs * 0.15 - (clue.length - k - 0.5) * this.slot;
           ctx.fillText(String(clue[k]), ox + c * cs + cs / 2, y + 1);
         }
+      }
+
+      // stroke length while painting, e.g. "4"
+      const d = this.drag;
+      if (d && d.count > 1) {
+        const bx = ox + (d.end.c + 0.5) * cs, by = oy + d.end.r * cs - cs * 0.45;
+        const bw = Math.max(cs * 0.9, 26), bh = Math.max(cs * 0.62, 20);
+        ctx.fillStyle = C.accent;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(bx - bw / 2, by - bh / 2, bw, bh, bh / 2); else ctx.rect(bx - bw / 2, by - bh / 2, bw, bh);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = this.font(bh * 0.62, 750);
+        ctx.fillText(String(d.count), bx, by + 1);
       }
     }
   }

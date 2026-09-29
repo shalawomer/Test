@@ -1,11 +1,12 @@
 /* Pocket Logic service worker — caches the whole (tiny) app so it runs fully offline.
  * Bump VERSION whenever a cached file changes. */
-const VERSION = 'pocket-logic-v1';
+const VERSION = 'pocket-logic-v2';
 const ASSETS = [
   './',
   './index.html',
   './css/style.css',
   './js/core.js',
+  './js/fx.js',
   './js/games/flow.js',
   './js/games/nonogram.js',
   './js/games/bridges.js',

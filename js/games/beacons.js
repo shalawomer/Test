@@ -137,6 +137,11 @@
       return out;
     }
 
+    progress() {
+      const b = this.beacons();
+      return b.length ? this.puzzle.clues.reduce((n, q) => n + (nearest(b, q.r, q.c) === q.d ? 1 : 0), 0) : 0;
+    }
+
     status() { return `Beacons ${this.beacons().length}/${this.puzzle.n}`; }
 
     layout(W, H) {
@@ -208,7 +213,7 @@
       this.pushHistory();
       this.cells[target] = value;
       this.flash(target);
-      this.commit();
+      this.commit('hint');
       return true;
     }
 
@@ -254,6 +259,21 @@
         const d = beacons.length ? nearest(beacons, q.r, q.c) : Infinity;
         ctx.fillStyle = d < q.d ? C.danger : d === q.d ? C.clueDone : C.clue;
         ctx.fillText(String(q.d), (q.c + 0.5) * cs, (q.r + 0.5) * cs + 1);
+      }
+
+      // assist: tiles ruled out by the beacons already placed (same row/column or touching)
+      if (!this.won) {
+        ctx.fillStyle = C.muted;
+        ctx.globalAlpha = 0.45;
+        for (let i = 0; i < this.cells.length; i++) {
+          if (this.cells[i] !== EMPTY || this.clueAt[i] >= 0) continue;
+          const r = (i / n) | 0, c = i % n;
+          if (!beacons.some(([br, bc]) => br === r || bc === c || (Math.abs(br - r) <= 1 && Math.abs(bc - c) <= 1))) continue;
+          ctx.beginPath();
+          ctx.arc((c + 0.5) * cs, (r + 0.5) * cs, Math.max(1.5, cs * 0.045), 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
       }
 
       // marks
@@ -310,7 +330,7 @@
         <li>Each number is the distance to the <b>nearest</b> beacon, counted in up/down/left/right steps. Number tiles never hold a beacon.</li>
       </ul>
       <p>A <b>3</b> means no beacon is 1 or 2 steps away, but at least one is exactly 3 steps away.</p>
-      <p>Tap a tile to cycle empty → ✕ → beacon. Drag to mark several tiles with ✕.</p>
+      <p>Tap a tile to cycle empty → ✕ → beacon. Drag to mark several tiles with ✕. Small dots show tiles your beacons already rule out.</p>
       <p>Every puzzle has exactly one solution.</p>`,
     generate,
     View: BeaconsView,

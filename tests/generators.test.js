@@ -41,12 +41,13 @@ test('nonogram: clues match the picture and line logic alone solves it', () => {
   }
 });
 
-test('flow: solution pipes are valid, fill the board and never touch themselves', () => {
-  const { isSolved, PALETTE } = PL.games.flow.logic;
+test('flow: solution pipes are valid, unique, fill the board and never touch themselves', () => {
+  const { isSolved, countSolutions, PALETTE } = PL.games.flow.logic;
   for (const { puzzle: p, size, level } of puzzles('flow')) {
     const tag = `${size.id} L${level}`;
     assert.ok(isSolved(p, p.solution), tag);
     assert.ok(p.ends.length <= PALETTE.length, tag);
+    assert.equal(countSolutions(p, 2), 1, `${tag} not unique`);
     for (const pipe of p.solution) {
       assert.ok(pipe.length >= 3, `${tag} short pipe`);
       const idx = new Map(pipe.map((c, i) => [c, i]));
@@ -79,6 +80,23 @@ test('beacons: solution follows the rules and is the only one', () => {
     assert.equal(countSolutions(p.n, p.clues, 2), 1, `${tag} not unique`);
     assert.ok(p.clues.every((q) => p.solution[q.r] !== q.c), `${tag} clue on a beacon`);
   }
+});
+
+test('flow solver finds every solution of an ambiguous board', () => {
+  const { isSolved, countSolutions } = PL.games.flow.logic;
+  const board = { w: 4, h: 4, ends: [[9, 15], [5, 6], [10, 12]] };
+  const found = [];
+  assert.equal(countSolutions(board, 5, found), 2);
+  for (const paths of found) assert.ok(isSolved(board, paths));
+  assert.notDeepEqual(found[0], found[1]);
+});
+
+test('daily seeds differ by day and by game', () => {
+  const seeds = new Set();
+  for (const day of ['2026-09-28', '2026-09-29', '2026-09-30']) {
+    for (const id of Object.keys(PL.games)) seeds.add(PL.hashString(`daily|${id}|${day}`));
+  }
+  assert.equal(seeds.size, 3 * Object.keys(PL.games).length);
 });
 
 test('rule checkers reject broken boards', () => {

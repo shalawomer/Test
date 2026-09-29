@@ -198,6 +198,7 @@
       this.canvas.classList.add('rounded');
       this.vals = new Int8Array(puzzle.edges.length);
       this.sel = -1;
+      this.hoverEdge = -1;
       this.drag = null;
       if (opts && opts.saved) this.deserialize(opts.saved);
     }
@@ -212,12 +213,13 @@
 
     sum(i) { return this.puzzle.incident[i].reduce((s, e) => s + this.vals[e], 0); }
 
-    status() {
-      const n = this.puzzle.islands.length;
+    progress() {
       let done = 0;
-      for (let i = 0; i < n; i++) if (this.sum(i) === this.puzzle.islands[i].num) done++;
-      return `Islands ${done}/${n}`;
+      for (let i = 0; i < this.puzzle.islands.length; i++) if (this.sum(i) === this.puzzle.islands[i].num) done++;
+      return done;
     }
+
+    status() { return `Islands ${this.progress()}/${this.puzzle.islands.length}`; }
 
     layout(W, H) {
       const n = this.puzzle.n;
@@ -267,7 +269,13 @@
       return best;
     }
 
+    onHover(p) {
+      const e = p && this.islandAt(p) < 0 ? this.edgeAt(p) : -1;
+      if (e !== this.hoverEdge) { this.hoverEdge = e; this.requestDraw(); }
+    }
+
     onDown(p) {
+      this.hoverEdge = -1;
       this.drag = { from: this.islandAt(p), start: p, edge: -1 };
     }
 
@@ -307,7 +315,7 @@
       const next = (this.vals[e] + 1) % 3;
       if (this.vals[e] === 0) {
         const blocker = this.puzzle.edges[e].cross.find((f) => this.vals[f] > 0);
-        if (blocker !== undefined) { this.flash({ edge: blocker }, 700); return; }
+        if (blocker !== undefined) { this.flash({ edge: blocker }, 700); this.emit('bad'); return; }
       }
       this.pushHistory();
       this.vals[e] = next;
@@ -324,7 +332,7 @@
       this.vals[e] = sol[e];
       for (const f of this.puzzle.edges[e].cross) if (sol[e] && this.vals[f]) this.vals[f] = 0;
       this.flash({ edge: e });
-      this.commit();
+      this.commit('hint');
       return true;
     }
 
@@ -361,10 +369,16 @@
         ctx.globalAlpha = 1;
       }
 
-      // drag preview
-      if (this.drag && this.drag.edge >= 0) {
-        ctx.globalAlpha = 0.35;
-        line(this.drag.edge, 0, C.accent, cs * 0.24);
+      // guides: neighbours of the selected island, the drag target, the hovered gap
+      if (this.sel >= 0 && !this.won) {
+        ctx.globalAlpha = 0.18;
+        for (const e of this.puzzle.incident[this.sel]) line(e, 0, C.accent, cs * 0.16);
+        ctx.globalAlpha = 1;
+      }
+      const preview = this.drag ? this.drag.edge : this.won ? -1 : this.hoverEdge;
+      if (preview >= 0 && preview !== undefined) {
+        ctx.globalAlpha = this.drag ? 0.35 : 0.2;
+        line(preview, 0, C.accent, cs * 0.24);
         ctx.globalAlpha = 1;
       }
 

@@ -207,15 +207,28 @@
     }
     dropHistory() { this.history.pop(); }
 
-    /** Call after every committed player action. */
-    commit() {
+    /** Report a feedback event ('tap', 'good', 'hint', 'bad') to the app (sounds, haptics). */
+    emit(name) { if (this.opts.onEvent) this.opts.onEvent(name); }
+
+    /** Remember the current progress count so the next commit can tell whether it went up. */
+    syncProgress() { this._progress = this.progress(); }
+
+    /**
+     * Call after every committed player action. Plays 'good' when a unit of progress was
+     * completed (a line, pipe, island…), otherwise `kind` (default 'tap'; 'quiet' plays nothing).
+     */
+    commit(kind) {
       this.requestDraw();
+      const p = this.progress(), up = this._progress !== undefined && p > this._progress;
+      this._progress = p;
       if (this.opts.onChange) this.opts.onChange();
       if (!this.won && this.isSolved()) {
         this.won = true;
         this.requestDraw();
         if (this.opts.onWin) this.opts.onWin();
+        return;
       }
+      if (kind !== 'quiet') this.emit(kind === 'hint' ? 'hint' : up ? 'good' : kind || 'tap');
     }
 
     undo() {
@@ -232,6 +245,8 @@
       this.commit();
     }
 
+    /** Count of completed units (lines, pipes, islands…); drives the "good" feedback. */
+    progress() { return 0; }
     get tools() { return []; }
     setTool() {}
     onHover() {}
